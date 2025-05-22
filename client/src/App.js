@@ -4,13 +4,18 @@ import './App.css';
 // Import React core functions
 import React, { useEffect, useState } from 'react';
 
+// Import React Router components
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
+
 // Import Supabase client to manage authentication
 import { supabase } from './supabaseClient';
 
 // Import custom components
-import SignupLogin from './SignupLogin'; // Login & Signup form
-import Account from './Account';         // Profile setup (bio + avatar)
-import PostForm from './PostForm';       // Main page feed & posting
+import SignupLogin from './pages/SignupLogin'; // Login & Signup form
+import Account from './pages/Account';         // Profile setup (bio + avatar)
+import PostForm from './components/PostForm';       // Main page feed & posting
+import Messages from './pages/MessagePage';       // Messages component
+import Navigation from './components/Navigation';   // Navigation bar component
 
 function App() {
   // State to track the current user session
@@ -29,7 +34,7 @@ function App() {
     });
 
     // Clean up listener when component unmounts
-    return () => listener.subscription.unsubscribe();
+    return () => listener?.subscription?.unsubscribe();
   }, []);
 
   // If user is not logged in, show the Signup/Login page
@@ -37,26 +42,28 @@ function App() {
     return <SignupLogin onLogin={() => window.location.reload()} />;
   }
 
-  // If user is logged in, show profile setup + main post feed
+  // If user is logged in, show the app with navigation
   return (
-    <>
-      {/* Logout Button - clears session */}
-      <button
-        onClick={async () => {
-          await supabase.auth.signOut(); // Logs the user out
-          window.location.reload();      // Refresh the app
-        }}
-        style={{ position: 'absolute', top: 10, right: 10 }}
-      >
-        Log Out
-      </button>
+    <BrowserRouter>
+      <div className="app-container">
 
-      {/* Profile setup (bio + avatar upload) */}
-      <Account />
+        {/* Navigation bar */}
+        <Navigation />
 
-      {/* Main post feed with upload + display */}
-      <PostForm />
-    </>
+        {/* Routes */}
+        <Routes>
+          {/* Home route - shows the post feed */}
+          <Route path="/" element={<PostForm />} />
+
+          <Route path="edit-account" element={<Account />} />
+          {/* Messages route */}
+          <Route path="/messages" element={<Messages />} />
+          
+          {/* Redirect any other routes to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 
