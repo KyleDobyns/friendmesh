@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import profileImg from '../images/profile.png';
+import UserHoverCard from './UserHoverCard';
 
 function PostForm() {
   const [userId, setUserId] = useState(null);
@@ -14,6 +15,7 @@ function PostForm() {
   const [showComments, setShowComments] = useState({});
   const [comments, setComments] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
+  const [activeHoverCardPostId, setActiveHoverCardPostId] = useState(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -211,6 +213,32 @@ function PostForm() {
     }
   };
 
+  // toggles the user pfp in a post on and off. 
+  // when a new user pfp is displayed, hide all others. 
+  const toggleHoverCard = (postId) => {
+    setActiveHoverCardPostId(prevActiveId => (prevActiveId === postId ? null : postId));
+  };
+
+  const handleAddFriendOnFeed = (targetUserId) => {
+    if (targetUserId === userId) {
+        console.log("you cannot add yourself as a friend");
+        return;
+    }
+    //console.log(`Request to add friend: ${targetUserId}`);
+    //todo
+    alert(`friend request to user id ${targetUserId} initiated (todo...)`);
+  };
+
+  const handleSendMessageOnFeed = (targetUserId) => {
+    if (targetUserId === userId) {
+        console.log("you cannot message yourself");
+        return;
+    }
+    //console.log(`request to send message to: ${targetUserId}`);
+    //todo
+    alert(`message to user id ${targetUserId} initiated (todo...))`);
+  };
+
   return (
     <div style={{ backgroundColor: '#f4f0fb', minHeight: '100vh', padding: '2rem' }}>
       <div style={{ display: 'flex', maxWidth: '1000px', margin: '0 auto' }}>
@@ -305,9 +333,31 @@ function PostForm() {
                   ×
                 </button>
               )}
-              <div style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                {(post.User?.userName || post.user_id)} • {new Date(post.post_date).toLocaleString()}
+              
+              <div style={{marginBottom: '0.5rem', fontWeight: 'bold', display: 'flex' }}>
+                <div className = 'user-hover-wrapper'>
+                  <span style={{ color: '#333', cursor: 'pointer' }} onClick={() => toggleHoverCard(post.post_id)}>
+                    {(post.User?.userName || post.user_id)}
+                  </span>
+                  <span style={{marginLeft: '0.5rem', color: '#777', fontWeight: 'normal' }}>
+                    • {new Date(post.post_date).toLocaleString()}
+                  </span>
+
+                  {/* toggle the current user pfp on and off. also toggles all others off */}
+                  {activeHoverCardPostId === post.post_id && post.User && post.userId !== userId &&(
+                    <div className='user-hover-popup-container'>
+                      <UserHoverCard
+                        user = {post.User}
+                        currentUserId={userId}
+                        onAddFriend={handleAddFriendOnFeed}
+                        onSendMessage={handleSendMessageOnFeed}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+
+                
               <p>{post.post_content}</p>
               {/* Show image if post has one */}
               {post.image_url && (
