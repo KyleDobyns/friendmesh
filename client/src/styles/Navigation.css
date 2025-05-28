@@ -6,6 +6,12 @@
     background-color: blue;
 }
 
+.nav-title-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+
 .nav-title {
     margin: 0;
     color: blue;
