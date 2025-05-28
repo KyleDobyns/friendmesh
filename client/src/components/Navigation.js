@@ -6,13 +6,10 @@ import '../styles/Navigation.css';
 function Navigation() {
     return (
         <nav className="nav-bar">
-            <div className="nav-title">FriendMesh</div>
+            <Link to="/" className="nav-title-link">
+                <div className="nav-title">FriendMesh</div>
+            </Link>
             <ul className="nav-list">
-                <li>
-                    <Link to="/" className="nav-link">
-                        Home
-                    </Link>
-                </li>
                 <li>
                     <Link to="/messages" className="nav-link">
                         Messages
