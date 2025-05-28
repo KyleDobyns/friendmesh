@@ -1,0 +1,92 @@
+
+.user-hover-card {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    width: 280px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .hover-card-pfp {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 12px;
+    border: 3px solid #f0f0f0;
+  }
+  
+  .hover-card-username {
+    font-weight: bold;
+    font-size: 1.15em;
+    margin-bottom: 6px;
+    color: #333;
+  }
+  
+  .hover-card-bio {
+    font-size: 0.9em;
+    color: #555;
+    margin-bottom: 16px;
+    line-height: 1.4;
+    max-height: calc(0.9em * 1.4 * 3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+  }
+  
+  .hover-card-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .hover-card-actions .hover-action-button {
+    flex-grow: 1;
+    background-color: #6c63ff;
+    color: white;
+    border: none;
+    padding: 9px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+  }
+  
+  .hover-card-actions .hover-action-button:hover {
+    background-color: #574fd8;
+  }
+  
+  .username-hover-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .username-hover-wrapper .user-hover-card-popup-container {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease-in-out, visibility 0s 0.25s, transform 0.25s ease-in-out;
+  }
+  
+  .username-hover-wrapper:hover .user-hover-card-popup-container {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s, 0s, 0s;
+    transform: translateX(-50%) translateY(-5px); 
+  }
