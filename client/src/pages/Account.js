@@ -19,9 +19,9 @@ function Account() {
 
     if (user) {
       const { data, error } = await supabase
-        .from('USERS')
+        .from('User')
         .select('bio, avatar_url')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (data) {
@@ -42,23 +42,25 @@ function Account() {
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, avatar, { upsert: true });
+        .upload(filePath, avatar);
 
       if (uploadError) {
         alert('Image upload failed: ' + uploadError.message);
         return;
       }
 
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      newAvatarUrl = urlData.publicUrl;
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      newAvatarUrl = publicUrlData?.publicUrl || '';
       setAvatarUrl(newAvatarUrl);
     }
 
     const { error } = await supabase
-      .from('USERS')
+      .from('User')
       .upsert(
-        { id: user.id, bio: bio, avatar_url: newAvatarUrl },
-        { onConflict: 'id' }
+        { user_id: user.id, bio: bio, avatar_url: newAvatarUrl },
+        { onConflict: 'user_id' }
       );
 
     if (!error) {
@@ -89,7 +91,12 @@ function Account() {
           onChange={(e) => setBio(e.target.value)}
           style={{ width: '100%', marginBottom: '1rem', padding: '10px' }}
         />
-        <input type="file" accept="image/*" onChange={(e) => setAvatar(e.target.files[0])} />
+        <input type="file" accept="image/*" onChange={(e) => {
+          setAvatar(e.target.files[0]);
+          if (e.target.files[0]) {
+            setAvatarUrl(URL.createObjectURL(e.target.files[0]));
+          }
+        }} />
         <br />
         <button
           onClick={handleSave}

@@ -16,12 +16,26 @@ function PostForm() {
   const [comments, setComments] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
   const [activeHoverCardPostId, setActiveHoverCardPostId] = useState(null);
+  const [profileImage, setProfileImage] = useState(profileImg);
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
       setUserName(user?.user_metadata?.full_name || user?.email || 'Unknown');
+
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('User')
+          .select('avatar_url')
+          .eq('user_id', user.id)
+          .single();
+        if (data && data.avatar_url) {
+          setProfileImage(data.avatar_url);
+        } else {
+          setProfileImage(profileImg);
+        }
+      }
     };
     getUser();
     fetchPosts();
@@ -246,7 +260,7 @@ function PostForm() {
         <div style={{ width: '250px', backgroundColor: '#fff', borderRadius: '8px', padding: '1rem', marginRight: '1rem' }}>
           <div style={{ textAlign: 'center' }}>
             <img
-              src={profileImg}
+              src={profileImage}
               alt="profile"
               style={{
                 borderRadius: '50%',
