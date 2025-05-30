@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import '../styles/MessagePage.css'; // Import the CSS file
 
 function Messages() {
   const [contacts, setContacts] = useState([]);
@@ -14,127 +15,132 @@ function Messages() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
       
-      // For demo purposes - fetch some mock contacts
-      // In a real app, you'd query your database for actual contacts
-      fetchContacts(user.id);
+      if (user) {
+        fetchAllUsersAsContacts(user.id);
+      }
     };
     
     getUser();
   }, []);
 
-  // Fetch user's contacts
-  const fetchContacts = async (userId) => {
-    // This is a placeholder - in a real app, you would:
-    // 1. Query USERS table for contacts
-    // 2. Or query a separate CONTACTS or FRIENDS table
-    const { data, error } = await supabase
-      .from('USERS')
-      .select('id, email, avatar_url, bio')
-      .neq('id', userId); // Everyone except current user
-      
-    if (data) {
-      setContacts(data);
-    }
-    
-    if (error) {
-      console.error('Error fetching contacts:', error);
+  // Temporary solution: fetch all users as potential contacts
+  const fetchAllUsersAsContacts = async (currentUserId) => {
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('User')
+        .select('user_id, userName, bio, email')
+        .neq('user_id', currentUserId);
+        
+      if (userData) {
+        setContacts(userData);
+      }
+      if (userError) {
+        console.error('Error fetching users:', userError);
+      }
+    } catch (error) {
+      console.error('Error in fetchAllUsersAsContacts:', error);
     }
   };
 
-  // Fetch messages between current user and selected contact
+/*   const fetchContactsFromFriendTable = async () => {
+    try {
+      const { data: friendData, error: friendError } = await supabase
+        .from('Friend')
+        .select('f_user_id, friend_date, friend_note');
+      
+      if (friendError) {
+        console.error('Error fetching from Friend table:', friendError);
+        return;
+      }
+
+      if (friendData && friendData.length > 0) {
+        const friendIds = friendData.map(friend => friend.f_user_id);
+        const { data: userData, error: userError } = await supabase
+          .from('User')
+          .select('user_id, userName, bio, email')
+          .in('user_id', friendIds);
+        if (userData) {
+          setContacts(userData);
+        }
+        if (userError) {
+          console.error('Error fetching friend user details:', userError);
+        }
+      }
+    } catch (error) {
+      console.error('Error in fetchContactsFromFriendTable:', error);
+    }
+  }; */
+
   const fetchMessages = async (contactId) => {
     if (!currentUser || !contactId) return;
-    
-    // This assumes you have a MESSAGES table with sender_id, receiver_id, content, and created_at
-    const { data, error } = await supabase
-      .from('MESSAGES')
-      .select('*')
-      .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
-      .or(`sender_id.eq.${contactId},receiver_id.eq.${contactId}`)
-      .order('created_at', { ascending: true });
-      
-    if (data) {
-      setMessages(data);
-    }
-    
-    if (error) {
-      console.error('Error fetching messages:', error);
+    try {
+      const { data, error } = await supabase
+        .from('Message')
+        .select('*')
+        .in('user_id', [currentUser.id, contactId])
+        .order('msg_time', { ascending: true });
+      if (data) {
+        setMessages(data);
+      }
+      if (error) {
+        console.error('Error fetching messages:', error);
+      }
+    } catch (error) {
+      console.error('Error in fetchMessages:', error);
     }
   };
 
-  // When a contact is selected
   const handleSelectContact = (contact) => {
     setSelectedContact(contact);
-    fetchMessages(contact.id);
+    fetchMessages(contact.user_id);
   };
 
-  // Send a new message
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedContact || !currentUser) return;
-    
-    const { error } = await supabase
-      .from('MESSAGES')
-      .insert({
-        sender_id: currentUser.id,
-        receiver_id: selectedContact.id,
-        content: newMessage,
-      });
-      
-    if (!error) {
-      setNewMessage('');
-      fetchMessages(selectedContact.id); // Refresh messages
-    } else {
-      console.error('Error sending message:', error);
+    if (!newMessage.trim() || !currentUser) return;
+    try {
+      const { error } = await supabase
+        .from('Message')
+        .insert({
+          user_id: currentUser.id,
+          msg_content: newMessage,
+        });
+      if (!error) {
+        setNewMessage('');
+        if (selectedContact) {
+          fetchMessages(selectedContact.user_id);
+        }
+      } else {
+        console.error('Error sending message:', error);
+      }
+    } catch (error) {
+      console.error('Error in sendMessage:', error);
     }
   };
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 120px)', backgroundColor: '#f4f0fb', padding: '1rem' }}>
+    <div className="messages-container">
       {/* Contacts sidebar */}
-      <div style={{ 
-        width: '250px', 
-        backgroundColor: '#fff', 
-        borderRadius: '8px', 
-        marginRight: '1rem',
-        overflow: 'auto',
-        padding: '1rem'
-      }}>
+      <div className="contacts-sidebar">
         <h3>Contacts</h3>
-        
         {contacts.length === 0 ? (
-          <p>No contacts found</p>
+          <p>No contacts found. Check console for debugging info.</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <ul className="contacts-list">
             {contacts.map(contact => (
-              <li 
-                key={contact.id}
+              <li
+                key={contact.user_id}
                 onClick={() => handleSelectContact(contact)}
-                style={{
-                  padding: '0.75rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  backgroundColor: selectedContact?.id === contact.id ? '#f0f0ff' : 'transparent',
-                  marginBottom: '0.5rem'
-                }}
+                className={`contact-item${selectedContact?.user_id === contact.user_id ? ' selected' : ''}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    borderRadius: '50%', 
-                    backgroundColor: '#6c63ff',
-                    marginRight: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: 'bold'
-                  }}>
-                    {contact.email?.charAt(0).toUpperCase()}
+                <div className="contact-avatar-row">
+                  <div className="contact-avatar">
+                    {(contact.userName || contact.email)?.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 'bold' }}>{contact.email?.split('@')[0]}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                    <div className="contact-name">
+                      {contact.userName || contact.email?.split('@')[0] || 'Unknown User'}
+                    </div>
+                    <div className="contact-bio">
                       {contact.bio ? contact.bio.substring(0, 20) + '...' : 'No bio'}
                     </div>
                   </div>
@@ -146,83 +152,39 @@ function Messages() {
       </div>
 
       {/* Messages area */}
-      <div style={{ 
-        flex: 1, 
-        backgroundColor: '#fff', 
-        borderRadius: '8px',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+      <div className="messages-area">
         {selectedContact ? (
           <>
             {/* Contact header */}
-            <div style={{ 
-              padding: '1rem', 
-              borderBottom: '1px solid #eee',
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              <div style={{ 
-                width: '40px', 
-                height: '40px', 
-                borderRadius: '50%', 
-                backgroundColor: '#6c63ff',
-                marginRight: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold'
-              }}>
-                {selectedContact.email?.charAt(0).toUpperCase()}
+            <div className="contact-header">
+              <div className="contact-avatar">
+                {(selectedContact.userName || selectedContact.email)?.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontWeight: 'bold' }}>{selectedContact.email?.split('@')[0]}</div>
-                <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                <div className="contact-name">
+                  {selectedContact.userName || selectedContact.email?.split('@')[0] || 'Unknown User'}
+                </div>
+                <div className="contact-status">
                   {selectedContact.online ? 'Online' : 'Offline'}
                 </div>
               </div>
             </div>
 
             {/* Messages */}
-            <div style={{ 
-              flex: 1, 
-              padding: '1rem',
-              overflow: 'auto',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
+            <div className="messages-list">
               {messages.length === 0 ? (
-                <div style={{ 
-                  flex: 1, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: '#666'
-                }}>
+                <div className="no-messages">
                   No messages yet. Start a conversation!
                 </div>
               ) : (
                 messages.map(message => (
-                  <div 
-                    key={message.id}
-                    style={{
-                      alignSelf: message.sender_id === currentUser?.id ? 'flex-end' : 'flex-start',
-                      backgroundColor: message.sender_id === currentUser?.id ? '#6c63ff' : '#f0f0f0',
-                      color: message.sender_id === currentUser?.id ? 'white' : 'black',
-                      padding: '0.75rem',
-                      borderRadius: '1rem',
-                      maxWidth: '70%',
-                      marginBottom: '0.5rem'
-                    }}
+                  <div
+                    key={message.msg_id}
+                    className={`message-bubble${message.user_id === currentUser?.id ? ' sent' : ' received'}`}
                   >
-                    {message.content}
-                    <div style={{ 
-                      fontSize: '0.7rem', 
-                      opacity: 0.7,
-                      marginTop: '0.25rem' 
-                    }}>
-                      {new Date(message.created_at).toLocaleTimeString()}
+                    {message.msg_content}
+                    <div className="message-time">
+                      {new Date(message.msg_time).toLocaleTimeString()}
                     </div>
                   </div>
                 ))
@@ -230,23 +192,13 @@ function Messages() {
             </div>
 
             {/* Message input */}
-            <div style={{ 
-              padding: '1rem', 
-              borderTop: '1px solid #eee',
-              display: 'flex'
-            }}>
+            <div className="message-input-row">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  borderRadius: '2rem',
-                  border: '1px solid #ddd',
-                  marginRight: '0.5rem'
-                }}
+                className="message-input"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     sendMessage();
@@ -255,27 +207,14 @@ function Messages() {
               />
               <button
                 onClick={sendMessage}
-                style={{
-                  backgroundColor: '#6c63ff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '2rem',
-                  padding: '0 1.5rem',
-                  cursor: 'pointer'
-                }}
+                className="send-button"
               >
                 Send
               </button>
             </div>
           </>
         ) : (
-          <div style={{ 
-            flex: 1, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            color: '#666'
-          }}>
+          <div className="select-contact-message">
             Select a contact to start messaging
           </div>
         )}

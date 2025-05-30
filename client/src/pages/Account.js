@@ -79,7 +79,8 @@ function Account() {
         )}
         <strong>{user?.email?.split('@')[0]}</strong>
         <p style={{ fontStyle: 'italic', color: '#666' }}>{bio}</p>
-        <a href="#">Find Friends</a>
+        {/* TODO: style this better */}
+        <button onClick={() => window.location.href="/friends"} >Find Friends</button>
       </div>
 
       <div style={{ flex: 2, marginLeft: '2rem', background: 'white', padding: '2rem', borderRadius: '10px' }}>

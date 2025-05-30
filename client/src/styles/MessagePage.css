@@ -17,6 +17,20 @@
   padding: 1rem;
 }
 
+.friend-table-btn-row {
+  margin-bottom: 1rem;
+}
+
+.friend-table-btn {
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  background-color: #6c63ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 .contacts-sidebar h3 {
   margin-top: 0;
   margin-bottom: 1rem;
@@ -33,16 +47,14 @@
   padding: 0.75rem;
   border-radius: 4px;
   cursor: pointer;
+  background-color: transparent;
   margin-bottom: 0.5rem;
-  transition: background-color 0.2s ease;
+  transition: background 0.2s;
 }
 
+.contact-item.selected,
 .contact-item:hover {
   background-color: #f0f0ff;
-}
-
-.contact-item.selected {
-  background-color: #e6e3ff;
 }
 
 .contact-avatar-row {
@@ -61,19 +73,16 @@
   justify-content: center;
   color: white;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 
 .contact-name {
   font-weight: bold;
-  font-size: 0.9rem;
-  color: #333;
 }
 
 .contact-bio {
   font-size: 0.8rem;
   color: #666;
-  margin-top: 0.2rem;
 }
 
 /* Messages Area */
@@ -93,19 +102,9 @@
   align-items: center;
 }
 
-.contact-header .contact-avatar {
-  margin-right: 0.75rem;
-}
-
-.contact-header .contact-name {
-  font-weight: bold;
-  font-size: 1rem;
-}
-
 .contact-status {
   font-size: 0.8rem;
   color: #666;
-  margin-top: 0.2rem;
 }
 
 /* Messages List */
@@ -123,15 +122,15 @@
   align-items: center;
   justify-content: center;
   color: #666;
-  font-style: italic;
 }
 
 .message-bubble {
-  max-width: 70%;
   padding: 0.75rem;
   border-radius: 1rem;
+  max-width: 70%;
   margin-bottom: 0.5rem;
-  word-wrap: break-word;
+  position: relative;
+  word-break: break-word;
 }
 
 .message-bubble.sent {
@@ -157,7 +156,6 @@
   padding: 1rem;
   border-top: 1px solid #eee;
   display: flex;
-  gap: 0.5rem;
 }
 
 .message-input {
@@ -165,12 +163,8 @@
   padding: 0.75rem;
   border-radius: 2rem;
   border: 1px solid #ddd;
-  outline: none;
+  margin-right: 0.5rem;
   font-size: 1rem;
-}
-
-.message-input:focus {
-  border-color: #6c63ff;
 }
 
 .send-button {
@@ -181,16 +175,6 @@
   padding: 0 1.5rem;
   cursor: pointer;
   font-size: 1rem;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
-}
-
-.send-button:hover {
-  background-color: #5a52d5;
-}
-
-.send-button:active {
-  background-color: #4a42c5;
 }
 
 /* Select Contact Message */
@@ -200,7 +184,6 @@
   align-items: center;
   justify-content: center;
   color: #666;
-  font-size: 1.1rem;
 }
 
 /* Responsive Design */

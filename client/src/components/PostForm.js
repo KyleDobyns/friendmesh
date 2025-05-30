@@ -272,7 +272,7 @@ function PostForm() {
               }}
             />
             <h3>{userName}</h3>
-            <button style={{ fontSize: '0.9em', color: '#007bff', background: 'none', border: 'none', cursor: 'pointer' }}>Find Friends</button>
+            <button onClick={() => window.location.href="/friends"} style={{ fontSize: '0.9em', color: '#007bff', background: 'none', border: 'none', cursor: 'pointer' }}>Find Friends</button>
           </div>
         </div>
         {/* Main Feed Area */}

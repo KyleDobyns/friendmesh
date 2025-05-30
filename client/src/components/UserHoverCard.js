@@ -29,7 +29,7 @@ function UserHoverCard({ user, onAddFriend, onSendMessage, currentUserId }) {
         }
         {user.id !== currentUserId && (
           <>
-            <button onClick={() => onAddFriend(user.id)} className="hover-action-button">
+            <button onClick={() => window.location.href="/friends"} className="hover-action-button">
               Add Friend
             </button>
             <button onClick={() => onSendMessage(user.id)} className="hover-action-button">
