@@ -1,3 +1,4 @@
+
 .main-nav {
     display: flex;
     justify-content: space-between;
@@ -11,13 +12,11 @@
     color: inherit;
 }
 
-
 .nav-title {
     margin: 0;
     color: blue;
     text-align: left;
     align-self: flex-start;
-
     padding: 0.5rem;
     border-radius: 20px;
     font-size: 2rem;
@@ -27,8 +26,8 @@
 .nav-title:hover {
     color: #4b47b5;
     background-color: blue;
-    
 }
+
 .nav-links {
     display: flex;
     align-items: center;
@@ -85,6 +84,7 @@
     background-color: rgb(237, 238, 241);
     border: 2px solid black;
 }
+
 .logout-button {
     color: white;
     background-color: #6c63ff;
@@ -95,6 +95,7 @@
     padding: 0.5rem;
     border-radius: 20px;
     transition: background 0.2s, color 0.2s;
+    cursor: pointer;
 }
 
 .logout-button:hover {
@@ -103,3 +104,220 @@
     border: 2px solid black;
 }
 
+/* NEW NOTIFICATION STYLES */
+
+/* Badge styles for nav items */
+.nav-item-with-badge {
+    position: relative;
+}
+
+.nav-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    color: white;
+}
+
+.nav-badge-messages {
+    background-color: #28a745;
+}
+
+.nav-badge-bell {
+    background-color: #dc3545;
+}
+
+/* Notification bell container */
+.nav-notification-container {
+    position: relative;
+}
+
+.nav-notification-btn {
+    background: none;
+    border: 1px solid white;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: background 0.2s, color 0.2s;
+    position: relative;
+}
+
+.nav-notification-btn:hover {
+    color: #4b47b5;
+    background-color: rgb(237, 238, 241);
+    border: 2px solid black;
+}
+
+.bell-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* Notification dropdown */
+.nav-notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 320px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.nav-notification-header {
+    padding: 16px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+}
+
+.nav-notification-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.nav-notification-count {
+    font-size: 12px;
+    color: #666;
+    background-color: #e9ecef;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.nav-notification-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.nav-notification-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+}
+
+.nav-notification-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: background-color 0.2s ease;
+}
+
+.nav-notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.nav-notification-item:last-child {
+    border-bottom: none;
+}
+
+.nav-notification-item.friend_request {
+    border-left: 3px solid #007bff;
+}
+
+.nav-notification-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.nav-notification-item.friend_request .nav-notification-icon {
+    background-color: #e3f2fd;
+    color: #007bff;
+}
+
+.nav-notification-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.nav-notification-message {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.nav-notification-time {
+    font-size: 12px;
+    color: #666;
+}
+
+.nav-notification-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+.nav-notification-clear {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.nav-notification-clear:hover {
+    background-color: #e3f2fd;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .nav-notification-dropdown {
+        width: 280px;
+        right: -20px;
+    }
+    
+    .nav-badge {
+        font-size: 10px;
+        padding: 1px 4px;
+        min-width: 14px;
+        height: 14px;
+    }
+    
+    .nav-list {
+        gap: 0.5rem;
+    }
+    
+    .nav-link {
+        padding: 0.3rem;
+        font-size: 0.9rem;
+    }
+    
+    .nav-notification-btn {
+        padding: 0.3rem;
+    }
+}

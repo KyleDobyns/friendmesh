@@ -111,3 +111,102 @@
 .friend-empty-msg {
   color: #666;
 }
+
+/* Tab Navigation */
+.friend-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.friend-tab {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.friend-tab:hover {
+  color: #007bff;
+}
+
+.friend-tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+  font-weight: bold;
+}
+
+/* Tab Content */
+.friend-tab-content {
+  min-height: 400px;
+}
+
+/* Additional button styles */
+.friend-accept-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.friend-accept-btn:hover {
+  background-color: #218838;
+}
+
+.friend-decline-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.friend-decline-btn:hover {
+  background-color: #c82333;
+}
+
+.friend-cancel-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.friend-cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+.friend-pending-btn {
+  background-color: #ffc107;
+  color: #212529;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.friend-card-request {
+  border-left: 4px solid #007bff;
+}
+
+.friend-card-sent {
+  border-left: 4px solid #ffc107;
+}
