@@ -5,6 +5,7 @@
   height: calc(100vh - 120px);
   background-color: #f4f0fb;
   padding: 1rem;
+  gap: 1rem;
 }
 
 /* Contacts Sidebar */
@@ -128,11 +129,13 @@
 
 /* Messages Area */
 .messages-area {
-  flex: 1;
+  flex: 1 1 auto;
   background-color: #fff;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Contact Header */
@@ -318,6 +321,94 @@
   align-items: center;
   justify-content: center;
   color: #666;
+}
+
+.profile-sidebar {
+  flex: 0 0 33.333%;
+  max-width: 400px;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-sidebar .profile-header {
+  text-align: center;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.profile-sidebar .profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 15px auto;
+  border: 3px solid #e0e0e0;
+}
+
+.profile-sidebar .profile-avatar-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: #6c63ff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  margin: 0 auto 15px auto;
+  border: 3px solid #e0e0e0;
+}
+
+.profile-sidebar h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.6em;
+  color: #333;
+  text-align: center;
+}
+
+.profile-sidebar .profile-details {
+  width: 100%;
+  text-align: left;
+}
+
+.profile-sidebar .profile-details h4 {
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+  color: #555;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 0.25rem;
+}
+
+.profile-sidebar .profile-details p {
+  margin-top: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.95em;
+  color: #444;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.profile-sidebar .no-profile-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #777;
+}
+
+.profile-sidebar .no-profile-selected p {
+  font-size: 1em;
 }
 
 /* Responsive Design */
