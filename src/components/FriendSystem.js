@@ -11,6 +11,7 @@ const FriendSystem = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('friends'); // friends, requests, discover
+  const [addingFriendUserIds, setAddingFriendUserIds] = useState(new Set());
 
   useEffect(() => {
     getCurrentUser();
@@ -189,7 +190,12 @@ const FriendSystem = () => {
       console.error('Error sending friend request:', error);
       alert('Failed to send friend request: ' + error.message);
     } finally {
-      setLoading(false);
+      setLoading(false); 
+      setAddingFriendUserIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(friendUserId);
+      return newSet;
+    });
     }
   };
 
@@ -544,10 +550,10 @@ const FriendSystem = () => {
                     {status === 'none' && (
                       <button
                         onClick={() => sendFriendRequest(user.user_id)}
-                        disabled={loading}
+                        disabled={loading || addingFriendUserIds.has(user.user_id)}
                         className="friend-add-btn"
                       >
-                        {loading ? 'Sending...' : 'Add Friend'}
+                        {addingFriendUserIds.has(user.user_id) ? 'Sending...' : 'Add Friend'}
                       </button>
                     )}
                   </div>
