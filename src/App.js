@@ -51,7 +51,7 @@ function App() {
   }
 
   console.log('Rendering app for user:', session.user.id);
-
+  
   // If user is logged in, show the app with navigation
   return (
     <BrowserRouter>
