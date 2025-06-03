@@ -505,64 +505,7 @@ function Messages() {
         )}
       </div>
 
-      <div className="profile-sidebar">
-        {selectedFriend ? (
-          <>
-            <div className="profile-header">
-              {selectedFriend.avatar_url ? (
-                <img 
-                  src={selectedFriend.avatar_url} 
-                  alt={`${selectedFriend.userName || selectedFriend.email?.split('@')[0] || 'User'}'s Avatar`} 
-                  className="profile-avatar" 
-                />
-              ) : (
-                <div className="profile-avatar-placeholder">
-                  {/* default is the firts letter of username*/}
-                  {(selectedFriend.userName || selectedFriend.email)?.charAt(0).toUpperCase() || 'F'}
-                </div>
-              )}
-
-              {}
-              <h3>
-                {selectedFriend.userName || selectedFriend.email?.split('@')[0] || 'Unknown User'}
-              </h3>
-            </div>
-
-            <div className="profile-details">
-              {selectedFriend.bio ? (
-                <>
-                  <h4>Bio:</h4>
-                  <p>{selectedFriend.bio}</p>
-                </>
-              ) : (
-                <>
-                  <h4>Bio:</h4>
-                  <p><em>No bio provided.</em></p>
-                </>
-              )}
-
-              {selectedFriend.email && (
-                <>
-                  <h4>Email:</h4>
-                  <p>{selectedFriend.email}</p>
-                </>
-              )}
-              
-              {selectedFriend.friendshipDate && (
-                <>
-                  <h4>Friends Since:</h4>
-                  <p>{new Date(selectedFriend.friendshipDate).toLocaleDateString()}</p>
-                </>
-              )}
-
-            </div>
-          </>
-        ) : (
-          <div className="no-profile-selected">
-            <p></p>
-          </div>
-        )}
-      </div>
+      
     </div>
   );
 }
