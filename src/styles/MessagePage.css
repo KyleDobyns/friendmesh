@@ -1,5 +1,3 @@
-/* MessagePage.css */
-
 .messages-container {
   display: flex;
   height: calc(100vh - 120px);
@@ -8,12 +6,10 @@
   gap: 1rem;
 }
 
-/* Contacts Sidebar */
 .contacts-sidebar {
   width: 250px;
   background-color: #fff;
   border-radius: 8px;
-  margin-right: 1rem;
   overflow: auto;
   padding: 1rem;
 }
@@ -29,7 +25,6 @@
   border-radius: 20px;
   font-size: 14px;
   outline: none;
-  box-sizing: border-box;
 }
 
 .no-friends-message {
@@ -71,7 +66,6 @@
   padding: 0.75rem;
   border-radius: 4px;
   cursor: pointer;
-  background-color: transparent;
   margin-bottom: 0.5rem;
   transition: background 0.2s;
 }
@@ -81,7 +75,6 @@
   background-color: #f0f0ff;
 }
 
-/* Contact list - highlight friends with new messages */
 .contact-item.has-new-messages {
   background-color: #e3f2fd;
   border-left: 3px solid #2196f3;
@@ -114,7 +107,6 @@
 .avatar-img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   object-fit: cover;
 }
 
@@ -127,18 +119,15 @@
   color: #666;
 }
 
-/* Messages Area */
 .messages-area {
-  flex: 1 1 auto;
+  flex: 1;
   background-color: #fff;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-sizing: border-box;
 }
 
-/* Contact Header */
 .contact-header {
   padding: 1rem;
   border-bottom: 1px solid #eee;
@@ -151,13 +140,12 @@
   color: #666;
 }
 
-/* Messages List - Normal chat order (oldest to newest) */
 .messages-list {
   flex: 1;
   padding: 1rem;
   overflow-y: auto;
   display: flex;
-  flex-direction: column; /* Normal order - oldest to newest */
+  flex-direction: column;
   gap: 0.5rem;
   scroll-behavior: smooth;
 }
@@ -170,7 +158,6 @@
   color: #666;
 }
 
-/* Message bubble base styles - Updated */
 .message-bubble {
   padding: 0.75rem;
   border-radius: 1rem;
@@ -192,10 +179,8 @@
   align-self: flex-start;
   background-color: #f0f0f0;
   color: black;
-  margin-right: auto;
 }
 
-/* New message highlighting */
 .message-bubble.new-message {
   animation: newMessageGlow 0.5s ease-in-out;
   border: 2px solid #28a745;
@@ -204,7 +189,6 @@
 
 .message-bubble.received.new-message {
   background-color: #d4edda;
-  border-color: #28a745;
 }
 
 .message-bubble.sent.new-message {
@@ -212,7 +196,6 @@
   box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
 }
 
-/* New message indicator */
 .new-message-indicator {
   position: absolute;
   top: -8px;
@@ -226,7 +209,6 @@
   animation: pulse 1s infinite;
 }
 
-/* Keyframe animations */
 @keyframes newMessageGlow {
   0% {
     transform: scale(1);
@@ -268,7 +250,6 @@
   text-align: left;
 }
 
-/* Message Input */
 .message-input-row {
   padding: 1rem;
   border-top: 1px solid #eee;
@@ -314,7 +295,6 @@
   cursor: not-allowed;
 }
 
-/* Select Contact Message */
 .select-contact-message {
   flex: 1;
   display: flex;
@@ -324,12 +304,11 @@
 }
 
 .profile-sidebar {
-  flex: 0 0 33.333%;
+  width: 33.333%;
   max-width: 400px;
   background-color: #fff;
   border-radius: 8px;
   padding: 1.5rem;
-  box-sizing: border-box;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -338,7 +317,6 @@
 .profile-sidebar .profile-header {
   text-align: center;
   margin-bottom: 20px;
-  width: 100%;
 }
 
 .profile-sidebar .profile-avatar {
@@ -346,7 +324,7 @@
   height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  margin: 0 auto 15px auto;
+  margin: 0 auto 15px;
   border: 3px solid #e0e0e0;
 }
 
@@ -360,26 +338,18 @@
   align-items: center;
   justify-content: center;
   font-size: 3rem;
-  margin: 0 auto 15px auto;
+  margin: 0 auto 15px;
   border: 3px solid #e0e0e0;
 }
 
 .profile-sidebar h3 {
-  margin-top: 0;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
   font-size: 1.6em;
   color: #333;
-  text-align: center;
-}
-
-.profile-sidebar .profile-details {
-  width: 100%;
-  text-align: left;
 }
 
 .profile-sidebar .profile-details h4 {
-  margin-top: 1rem;
-  margin-bottom: 0.25rem;
+  margin: 1rem 0 0.25rem;
   color: #555;
   font-size: 0.85em;
   text-transform: uppercase;
@@ -389,8 +359,7 @@
 }
 
 .profile-sidebar .profile-details p {
-  margin-top: 0.25rem;
-  margin-bottom: 0.75rem;
+  margin: 0.25rem 0 0.75rem;
   font-size: 0.95em;
   color: #444;
   line-height: 1.5;
@@ -411,7 +380,6 @@
   font-size: 1em;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .messages-container {
     flex-direction: column;
@@ -421,7 +389,6 @@
   
   .contacts-sidebar {
     width: 100%;
-    margin-right: 0;
     margin-bottom: 1rem;
     max-height: 200px;
   }

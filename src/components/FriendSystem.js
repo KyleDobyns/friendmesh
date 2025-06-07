@@ -1,53 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import '../styles/FriendSystem.css';
 
-const FriendSystem = () => {
-  const [users, setUsers] = useState([]);
-  const [friends, setFriends] = useState([]);
-  const [pendingRequests, setPendingRequests] = useState([]);
-  const [sentRequests, setSentRequests] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('friends'); // friends, requests, discover
-  const [addingFriendUserIds, setAddingFriendUserIds] = useState(new Set());
+// reducer
+const initialState = {
+  users: [],
+  friends: [],
+  pendingRequests: [],
+  sentRequests: [],
+  loading: false,
+  loadingUserIds: new Set()
+};
+
+function friendReducer(state, action) {
+  switch (action.type) {
+    case 'SET_USERS':
+      return { ...state, users: action.payload };
+    case 'SET_FRIENDS':
+      return { ...state, friends: action.payload };
+    case 'SET_PENDING_REQUESTS':
+      return { ...state, pendingRequests: action.payload };
+    case 'SET_SENT_REQUESTS':
+      return { ...state, sentRequests: action.payload };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'ADD_LOADING_USER':
+      return {
+        ...state,
+        loadingUserIds: new Set([...state.loadingUserIds, action.payload])
+      };
+    case 'REMOVE_LOADING_USER':
+      const newSet = new Set(state.loadingUserIds);
+      newSet.delete(action.payload);
+      return { ...state, loadingUserIds: newSet };
+    case 'SET_ALL_DATA':
+      return {
+        ...state,
+        users: action.payload.users,
+        friends: action.payload.friends,
+        pendingRequests: action.payload.pendingRequests,
+        sentRequests: action.payload.sentRequests
+      };
+    default:
+      return state;
+  }
+}
+
+// managing current user
+function useCurrentUser() {
+  const [userId, setUserId] = useState(null);
+  const userRef = useRef(null);
 
   useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      userRef.current = user;
+      setUserId(user?.id);
+    };
+    
     getCurrentUser();
   }, []);
 
-  useEffect(() => {
-    if (currentUser) {
-      fetchUsers();
-      fetchFriends();
-      fetchPendingRequests();
-      fetchSentRequests();
-    }
-  }, [currentUser]);
+  return { userId, userRef };
+}
 
-  const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
-  };
+// friend data fetching
+function useFriendData(userId) {
+  const [state, dispatch] = useReducer(friendReducer, initialState);
 
-  const fetchUsers = async () => {
+  const fetchAllData = useCallback(async () => {
+    if (!userId) return;
+
     try {
-      const { data, error } = await supabase
+      const { data: usersData, error: usersError } = await supabase
         .from('User')
         .select('user_id, userName, email, bio, avatar_url')
-        .neq('user_id', currentUser.id);
+        .neq('user_id', userId);
 
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
+      if (usersError) throw usersError;
 
-  // Fetch accepted friends
-  const fetchFriends = async () => {
-    try {
+      // accepted friends
       const { data: sentFriends, error: sentError } = await supabase
         .from('Friend')
         .select(`
@@ -57,8 +89,9 @@ const FriendSystem = () => {
           status,
           User!Friend_f_user_id_fkey(user_id, userName, email, bio, avatar_url)
         `)
-        .eq('user_id', currentUser.id)
+        .eq('user_id', userId)
         .eq('status', 'accepted');
+
 
       const { data: receivedFriends, error: receivedError } = await supabase
         .from('Friend')
@@ -69,33 +102,25 @@ const FriendSystem = () => {
           status,
           User!Friend_user_id_fkey(user_id, userName, email, bio, avatar_url)
         `)
-        .eq('f_user_id', currentUser.id)
+        .eq('f_user_id', userId)
         .eq('status', 'accepted');
 
       if (sentError || receivedError) {
         throw sentError || receivedError;
       }
 
+      // process friends
       const allFriends = [
         ...(sentFriends || []).map(f => ({ ...f.User, friendshipDate: f.friend_date })),
         ...(receivedFriends || []).map(f => ({ ...f.User, friendshipDate: f.friend_date }))
       ];
 
-      // Remove duplicates
       const uniqueFriends = allFriends.filter((friend, index, self) => 
         index === self.findIndex(f => f.user_id === friend.user_id)
       );
 
-      setFriends(uniqueFriends);
-    } catch (error) {
-      console.error('Error fetching friends:', error);
-    }
-  };
-
-  // Fetch pending friend requests received by current user
-  const fetchPendingRequests = async () => {
-    try {
-      const { data, error } = await supabase
+      // fetch pending requests
+      const { data: pendingData, error: pendingError } = await supabase
         .from('Friend')
         .select(`
           user_id,
@@ -103,27 +128,19 @@ const FriendSystem = () => {
           friend_note,
           User!Friend_user_id_fkey(user_id, userName, email, bio, avatar_url)
         `)
-        .eq('f_user_id', currentUser.id)
+        .eq('f_user_id', userId)
         .eq('status', 'pending');
 
-      if (error) throw error;
+      if (pendingError) throw pendingError;
 
-      const requests = (data || []).map(req => ({
+      const pendingRequests = (pendingData || []).map(req => ({
         ...req.User,
         requestDate: req.friend_date,
         requesterId: req.user_id
       }));
 
-      setPendingRequests(requests);
-    } catch (error) {
-      console.error('Error fetching pending requests:', error);
-    }
-  };
-
-  // Fetch friend requests sent by current user
-  const fetchSentRequests = async () => {
-    try {
-      const { data, error } = await supabase
+      // fetch sent requests
+      const { data: sentData, error: sentReqError } = await supabase
         .from('Friend')
         .select(`
           f_user_id,
@@ -132,33 +149,95 @@ const FriendSystem = () => {
           status,
           User!Friend_f_user_id_fkey(user_id, userName, email, bio, avatar_url)
         `)
-        .eq('user_id', currentUser.id)
+        .eq('user_id', userId)
         .eq('status', 'pending');
 
-      if (error) throw error;
+      if (sentReqError) throw sentReqError;
 
-      const requests = (data || []).map(req => ({
+      const sentRequests = (sentData || []).map(req => ({
         ...req.User,
         requestDate: req.friend_date,
         status: req.status
       }));
 
-      setSentRequests(requests);
-    } catch (error) {
-      console.error('Error fetching sent requests:', error);
-    }
-  };
+      // update all state at once
+      dispatch({
+        type: 'SET_ALL_DATA',
+        payload: {
+          users: usersData || [],
+          friends: uniqueFriends,
+          pendingRequests,
+          sentRequests
+        }
+      });
 
-  // Send friend request
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  return { state, dispatch, refetchData: fetchAllData };
+}
+
+const FriendSystem = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('friends');
+  
+  const { userId, userRef } = useCurrentUser();
+  const { state, dispatch, refetchData } = useFriendData(userId);
+
+  // relationship status checker
+  const getRelationshipStatus = useCallback((targetUserId) => {
+    if (state.friends.some(friend => friend.user_id === targetUserId)) {
+      return 'friends';
+    }
+    if (state.sentRequests.some(req => req.user_id === targetUserId)) {
+      return 'request_sent';
+    }
+    if (state.pendingRequests.some(req => req.user_id === targetUserId)) {
+      return 'request_received';
+    }
+    return 'none';
+  }, [state.friends, state.sentRequests, state.pendingRequests]);
+
+  //filtered lists
+  const filteredUsers = useMemo(() => 
+    state.users.filter(user =>
+      user.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [state.users, searchTerm]
+  );
+
+  const filteredFriends = useMemo(() => 
+    state.friends.filter(friend =>
+      friend.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      friend.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [state.friends, searchTerm]
+  );
+
+  const filteredPendingRequests = useMemo(() => 
+    state.pendingRequests.filter(req =>
+      req.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      req.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [state.pendingRequests, searchTerm]
+  );
+
+
   const sendFriendRequest = async (friendUserId) => {
-    if (!currentUser) return;
-    setLoading(true);
+    if (!userRef.current) return;
+    
+    dispatch({ type: 'ADD_LOADING_USER', payload: friendUserId });
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
     try {
-      // Check if any relationship already exists
       const { data: existingRelation } = await supabase
         .from('Friend')
         .select('*')
-        .or(`and(user_id.eq.${currentUser.id},f_user_id.eq.${friendUserId}),and(user_id.eq.${friendUserId},f_user_id.eq.${currentUser.id})`)
+        .or(`and(user_id.eq.${userRef.current.id},f_user_id.eq.${friendUserId}),and(user_id.eq.${friendUserId},f_user_id.eq.${userRef.current.id})`)
         .single();
 
       if (existingRelation) {
@@ -167,15 +246,13 @@ const FriendSystem = () => {
         } else if (existingRelation.status === 'pending') {
           alert('A friend request is already pending with this user!');
         }
-        setLoading(false);
         return;
       }
 
-      // Send friend request
       const { error } = await supabase
         .from('Friend')
         .insert({
-          user_id: currentUser.id,
+          user_id: userRef.current.id,
           f_user_id: friendUserId,
           friend_date: new Date().toISOString(),
           friend_note: '',
@@ -185,152 +262,144 @@ const FriendSystem = () => {
       if (error) throw error;
 
       alert('Friend request sent!');
-      await fetchSentRequests();
+      
+      //fetch sent requests
+      const { data, error: fetchError } = await supabase
+        .from('Friend')
+        .select(`
+          f_user_id,
+          friend_date,
+          friend_note,
+          status,
+          User!Friend_f_user_id_fkey(user_id, userName, email, bio, avatar_url)
+        `)
+        .eq('user_id', userRef.current.id)
+        .eq('status', 'pending');
+
+      if (!fetchError) {
+        const requests = (data || []).map(req => ({
+          ...req.User,
+          requestDate: req.friend_date,
+          status: req.status
+        }));
+        dispatch({ type: 'SET_SENT_REQUESTS', payload: requests });
+      }
+      
     } catch (error) {
       console.error('Error sending friend request:', error);
       alert('Failed to send friend request: ' + error.message);
     } finally {
-      setLoading(false); 
-      setAddingFriendUserIds(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(friendUserId);
-      return newSet;
-    });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'REMOVE_LOADING_USER', payload: friendUserId });
     }
   };
 
-  // Accept friend request
   const acceptFriendRequest = async (requesterId) => {
-    setLoading(true);
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const { error } = await supabase
         .from('Friend')
         .update({ 
           status: 'accepted',
-          friend_date: new Date().toISOString() // Update to acceptance date
+          friend_date: new Date().toISOString()
         })
         .eq('user_id', requesterId)
-        .eq('f_user_id', currentUser.id)
+        .eq('f_user_id', userRef.current.id)
         .eq('status', 'pending');
 
       if (error) throw error;
 
       alert('Friend request accepted!');
-      await fetchFriends();
-      await fetchPendingRequests();
+      await refetchData();
     } catch (error) {
       console.error('Error accepting friend request:', error);
       alert('Failed to accept friend request: ' + error.message);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  // Decline friend request
   const declineFriendRequest = async (requesterId) => {
-    setLoading(true);
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const { error } = await supabase
         .from('Friend')
         .delete()
         .eq('user_id', requesterId)
-        .eq('f_user_id', currentUser.id)
+        .eq('f_user_id', userRef.current.id)
         .eq('status', 'pending');
 
       if (error) throw error;
 
       alert('Friend request declined!');
-      await fetchPendingRequests();
+      
+      // pending requests
+      const updatedRequests = state.pendingRequests.filter(req => req.requesterId !== requesterId);
+      dispatch({ type: 'SET_PENDING_REQUESTS', payload: updatedRequests });
+      
     } catch (error) {
       console.error('Error declining friend request:', error);
       alert('Failed to decline friend request: ' + error.message);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  // Cancel sent friend request
   const cancelFriendRequest = async (friendUserId) => {
-    setLoading(true);
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const { error } = await supabase
         .from('Friend')
         .delete()
-        .eq('user_id', currentUser.id)
+        .eq('user_id', userRef.current.id)
         .eq('f_user_id', friendUserId)
         .eq('status', 'pending');
 
       if (error) throw error;
 
       alert('Friend request cancelled!');
-      await fetchSentRequests();
+      
+      //only sent requests
+      const updatedRequests = state.sentRequests.filter(req => req.user_id !== friendUserId);
+      dispatch({ type: 'SET_SENT_REQUESTS', payload: updatedRequests });
+      
     } catch (error) {
       console.error('Error cancelling friend request:', error);
       alert('Failed to cancel friend request: ' + error.message);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  // Remove friend
   const removeFriend = async (friendUserId) => {
     if (!window.confirm('Are you sure you want to remove this friend?')) return;
-    setLoading(true);
+    
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
       const { error } = await supabase
         .from('Friend')
         .delete()
-        .or(`and(user_id.eq.${currentUser.id},f_user_id.eq.${friendUserId}),and(user_id.eq.${friendUserId},f_user_id.eq.${currentUser.id})`);
+        .or(`and(user_id.eq.${userRef.current.id},f_user_id.eq.${friendUserId}),and(user_id.eq.${friendUserId},f_user_id.eq.${userRef.current.id})`);
 
       if (error) throw error;
 
       alert('Friend removed successfully!');
-      await fetchFriends();
+      
+      // only friends list
+      const updatedFriends = state.friends.filter(friend => friend.user_id !== friendUserId);
+      dispatch({ type: 'SET_FRIENDS', payload: updatedFriends });
+      
     } catch (error) {
       console.error('Error removing friend:', error);
       alert('Failed to remove friend: ' + error.message);
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
-
-  // Check relationship status with a user
-  const getRelationshipStatus = (userId) => {
-    // Check if already friends
-    if (friends.some(friend => friend.user_id === userId)) {
-      return 'friends';
-    }
-    // Check if request sent
-    if (sentRequests.some(req => req.user_id === userId)) {
-      return 'request_sent';
-    }
-    // Check if request received
-    if (pendingRequests.some(req => req.user_id === userId)) {
-      return 'request_received';
-    }
-    return 'none';
-  };
-
-  const filteredUsers = users.filter(user =>
-    user.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredFriends = friends.filter(friend =>
-    friend.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    friend.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredPendingRequests = pendingRequests.filter(req =>
-    req.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    req.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="friend-system-container">
       <h1>Friends</h1>
-      
-      {/* Search */}
       <div className="friend-search-row">
         <input
           type="text"
@@ -340,20 +409,18 @@ const FriendSystem = () => {
           className="friend-search-input"
         />
       </div>
-
-      {/* Tab Navigation */}
       <div className="friend-tabs">
         <button 
           className={`friend-tab ${activeTab === 'friends' ? 'active' : ''}`}
           onClick={() => setActiveTab('friends')}
         >
-          Friends ({friends.length})
+          Friends ({state.friends.length})
         </button>
         <button 
           className={`friend-tab ${activeTab === 'requests' ? 'active' : ''}`}
           onClick={() => setActiveTab('requests')}
         >
-          Requests ({pendingRequests.length})
+          Requests ({state.pendingRequests.length})
         </button>
         <button 
           className={`friend-tab ${activeTab === 'discover' ? 'active' : ''}`}
@@ -362,11 +429,10 @@ const FriendSystem = () => {
           Discover
         </button>
       </div>
-
-      {/* Tab Content */}
+      
       {activeTab === 'friends' && (
         <div className="friend-tab-content">
-          <h2>Your Friends ({friends.length})</h2>
+          <h2>Your Friends ({state.friends.length})</h2>
           <div className="friend-card-grid">
             {filteredFriends.map(friend => (
               <div key={friend.user_id} className="friend-card friend-card-friend">
@@ -390,7 +456,7 @@ const FriendSystem = () => {
                 <div className="friend-card-actions">
                   <button
                     onClick={() => removeFriend(friend.user_id)}
-                    disabled={loading}
+                    disabled={state.loading}
                     className="friend-remove-btn"
                   >
                     Remove Friend
@@ -407,8 +473,8 @@ const FriendSystem = () => {
 
       {activeTab === 'requests' && (
         <div className="friend-tab-content">
-          <h2>Friend Requests ({pendingRequests.length})</h2>
-          {pendingRequests.length === 0 ? (
+          <h2>Friend Requests ({state.pendingRequests.length})</h2>
+          {state.pendingRequests.length === 0 ? (
             <p className="friend-empty-msg">No pending friend requests.</p>
           ) : (
             <div className="friend-card-grid">
@@ -434,14 +500,14 @@ const FriendSystem = () => {
                   <div className="friend-card-actions">
                     <button
                       onClick={() => acceptFriendRequest(request.requesterId)}
-                      disabled={loading}
+                      disabled={state.loading}
                       className="friend-accept-btn"
                     >
                       Accept
                     </button>
                     <button
                       onClick={() => declineFriendRequest(request.requesterId)}
-                      disabled={loading}
+                      disabled={state.loading}
                       className="friend-decline-btn"
                     >
                       Decline
@@ -452,11 +518,11 @@ const FriendSystem = () => {
             </div>
           )}
 
-          {sentRequests.length > 0 && (
+          {state.sentRequests.length > 0 && (
             <>
-              <h3>Sent Requests ({sentRequests.length})</h3>
+              <h3>Sent Requests ({state.sentRequests.length})</h3>
               <div className="friend-card-grid">
-                {sentRequests.map(request => (
+                {state.sentRequests.map(request => (
                   <div key={request.user_id} className="friend-card friend-card-sent">
                     <div className="friend-card-header">
                       <img
@@ -478,7 +544,7 @@ const FriendSystem = () => {
                     <div className="friend-card-actions">
                       <button
                         onClick={() => cancelFriendRequest(request.user_id)}
-                        disabled={loading}
+                        disabled={state.loading}
                         className="friend-cancel-btn"
                       >
                         Cancel Request
@@ -523,7 +589,7 @@ const FriendSystem = () => {
                     {status === 'request_sent' && (
                       <button
                         onClick={() => cancelFriendRequest(user.user_id)}
-                        disabled={loading}
+                        disabled={state.loading}
                         className="friend-pending-btn"
                       >
                         Request Sent
@@ -533,14 +599,14 @@ const FriendSystem = () => {
                       <div style={{ display: 'flex', gap: '5px' }}>
                         <button
                           onClick={() => acceptFriendRequest(user.user_id)}
-                          disabled={loading}
+                          disabled={state.loading}
                           className="friend-accept-btn"
                         >
                           Accept
                         </button>
                         <button
                           onClick={() => declineFriendRequest(user.user_id)}
-                          disabled={loading}
+                          disabled={state.loading}
                           className="friend-decline-btn"
                         >
                           Decline
@@ -550,10 +616,10 @@ const FriendSystem = () => {
                     {status === 'none' && (
                       <button
                         onClick={() => sendFriendRequest(user.user_id)}
-                        disabled={loading || addingFriendUserIds.has(user.user_id)}
+                        disabled={state.loading || state.loadingUserIds.has(user.user_id)}
                         className="friend-add-btn"
                       >
-                        {addingFriendUserIds.has(user.user_id) ? 'Sending...' : 'Add Friend'}
+                        {state.loadingUserIds.has(user.user_id) ? 'Sending...' : 'Add Friend'}
                       </button>
                     )}
                   </div>

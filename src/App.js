@@ -1,25 +1,20 @@
-// Import global CSS styles
 import './App.css';
-
-// Import React core functions
 import React, { useEffect, useState } from 'react';
 
-// Import React Router components
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Import Supabase client to manage authentication
 import { supabase } from './supabaseClient';
 
 // Import custom components
-import SignupLogin from './pages/SignupLogin'; // Login & Signup form
-import Account from './pages/Account';         // Profile setup (bio + avatar)
-import PostForm from './components/PostForm';       // Main page feed & posting
-import Messages from './pages/MessagePage';       // Messages component
-import Navigation from './components/Navigation';   // Navigation bar component
+import SignupLogin from './pages/SignupLogin';
+import Account from './pages/Account';
+import PostForm from './components/PostForm';
+import Messages from './pages/MessagePage';
+import Navigation from './components/Navigation';   
 import FriendSystem from './components/FriendSystem';
 
 function App() {
-  // State to track the current user session
+  //track the current user session
   const [session, setSession] = useState(null);
 
   // Run once on component mount to check if user is logged in

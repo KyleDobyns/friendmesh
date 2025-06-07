@@ -88,31 +88,65 @@
   font-size: 12px;
 }
 
-.friend-add-btn {
+.friend-add-btn,
+.friend-friend-btn,
+.friend-accept-btn,
+.friend-decline-btn,
+.friend-cancel-btn,
+.friend-pending-btn {
   padding: 8px 16px;
-  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.friend-add-btn {
+  background-color: #007bff;
   font-size: 14px;
 }
 
 .friend-friend-btn {
-  padding: 8px 16px;
   background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
   cursor: not-allowed;
   font-size: 14px;
+}
+
+.friend-accept-btn {
+  background-color: #28a745;
+}
+
+.friend-accept-btn:hover {
+  background-color: #218838;
+}
+
+.friend-decline-btn {
+  background-color: #dc3545;
+}
+
+.friend-decline-btn:hover {
+  background-color: #c82333;
+}
+
+.friend-cancel-btn {
+  background-color: #6c757d;
+}
+
+.friend-cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+.friend-pending-btn {
+  background-color: #ffc107;
+  color: #212529;
 }
 
 .friend-empty-msg {
   color: #666;
 }
 
-/* Tab Navigation */
 .friend-tabs {
   display: flex;
   gap: 10px;
@@ -142,65 +176,8 @@
   font-weight: bold;
 }
 
-/* Tab Content */
 .friend-tab-content {
   min-height: 400px;
-}
-
-/* Additional button styles */
-.friend-accept-btn {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.3s;
-}
-
-.friend-accept-btn:hover {
-  background-color: #218838;
-}
-
-.friend-decline-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.3s;
-}
-
-.friend-decline-btn:hover {
-  background-color: #c82333;
-}
-
-.friend-cancel-btn {
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.3s;
-}
-
-.friend-cancel-btn:hover {
-  background-color: #5a6268;
-}
-
-.friend-pending-btn {
-  background-color: #ffc107;
-  color: #212529;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
 }
 
 .friend-card-request {

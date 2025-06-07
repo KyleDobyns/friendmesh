@@ -1,11 +1,12 @@
 # FriendMesh
 
-A simplified social media platform built by Cool Team Name with React (frontend), Node.js (backend), and Supabase (database/auth) for a class project.
+A simplified social media platform built by "Cool Team Name" with React and Supabase for a CSS 481 class project at UW Bothell.
 
 ## Project Structure
-- `client/`: React frontend (runs on `http://localhost:3000`)
-- `server/`: Node.js/Express backend (runs on `http://localhost:5000`)
-- `config/`: Configuration files (e.g., Supabase)
+- `friendmesh/`: React application with Supabase integration (runs on `http://localhost:3000`)
+
+## Getting Started
+Visit [friendmesh.vercel.app](https://friendmesh.vercel.app) or follow the setup instructions below to run locally.
 
 ## Setup Instructions
 1. **Clone the Repository**:
@@ -14,50 +15,32 @@ A simplified social media platform built by Cool Team Name with React (frontend)
    cd friendmesh
    ```
 
-2. **Install Frontend Dependencies**:
-   - Navigate to the `client` directory:
+2. **Install Dependencies**:
+   - Navigate to the project directory:
      ```bash
-     cd client
+     cd friendmesh
      npm install
      ```
 
-3. **Install Backend Dependencies**:
-   - Navigate to the `server` directory:
-     ```bash
-     cd ../server
-     npm install
-     ```
-
-4. **Start the Frontend**:
-   - In a terminal, from the `client` directory:
-     ```bash
-     cd client
-     npm start
-     ```
-   - Opens `http://localhost:3000` (React app).
-   - Use this terminal to monitor frontend logs for UI or React errors.
-
-5. **Start the Backend**:
-   - In a **separate terminal**, from the `server` directory:
-     ```bash
-     cd server
-     npm start
-     ```
-   - Runs at `http://localhost:5000` (Node.js API).
-   - Use this terminal to monitor backend logs for API or Supabase errors.
-
-6. **Supabase Setup**:
+3. **Supabase Setup**:
    - Sign up at [Supabase](https://supabase.com).
-   - Create a new project and obtain `SUPABASE_URL` and `SUPABASE_KEY`.
-   - Add them to `server/.env`:
+   - Create a new project and obtain `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+   - Create a `.env` file in the `friendmesh` directory:
      ```
-     SUPABASE_URL=your-supabase-url
-     SUPABASE_KEY=your-supabase-key
+     REACT_APP_SUPABASE_URL=your-supabase-url
+     REACT_APP_SUPABASE_ANON_KEY=your-supabase-anon-key
      ```
    - **Important**: Never commit `.env` to the repository.
 
-7. **Install Git**:
-   - Ensure Git is installed:
+4. **Start the Application**:
+   - From the `friendmesh` directory:
+     ```bash
+     npm start
+     ```
+   - Opens `http://localhost:3000` (React app).
+
+5. **Install Git**:
+   - Make sure Git is installed:
      ```bash
      git --version
      ```
@@ -68,40 +51,21 @@ A simplified social media platform built by Cool Team Name with React (frontend)
      ```
 
 ## Development
-- **Frontend**: Add React components in `client/src/components/`.
-- **Backend**: Add API routes in `server/routes/`.
+- **Supabase Client**: Configure Supabase connection in `friendmesh/src/supabaseClient.js`.
 - **Database**: Configure Supabase tables via the Supabase dashboard.
 
 ## Testing Tips
-- **Why Separate Terminals?** Running frontend and backend separately makes it easier to spot errors:
-  - Frontend logs (`client`) show React or UI issues (component rendering errors).
-  - Backend logs (`server`) show API or Supabase issues (database connection errors).
 - **Debugging**:
-  - Test the frontend alone by running only `client/npm start`.
-  - Test the backend alone with `server/npm start`.
-- **Port Conflicts**: If `localhost:3000` or `localhost:5000` are in use, stop other processes or change ports in `client/.env` (frontend) or `server/index.js` (backend).
-
-## Team Collaboration
-- **Collaborator Access**: Accept your GitHub collaborator invitation to push changes.
-- **Branching**: Create branches for features:
-  ```bash
-  git checkout -b feature-name
-  ```
-- **Pushing**: Push changes to GitHub:
-  ```bash
-  git push origin branch-name
-  ```
-- **Pull Requests**: Create pull requests for code reviews before merging to `main`.
-
-
-## Public Repository Notice
-- This repository is public and visible to everyone.
-- Make sure no sensitive data (e.g., `.env` files, Supabase keys) is committed.
+  - Check the browser console for React errors.
+  - Monitor the Network tab in browser DevTools for Supabase API calls.
+  - Use Supabase dashboard to verify database operations.
+- **Port Conflicts**: If `localhost:3000` is in use, stop other processes or the port will be automatically incremented.
 
 ## Troubleshooting
-- **Command not working?** Make sure you’re in the correct directory (`client/` for frontend, `server/` for backend) and ran `npm install`.
-- **Errors in logs?** Check the terminal for the frontend or backend to identify the issue.
-- **Can’t push changes?** Verify you’ve accepted the collaborator invitation.
+- **Command not working?** Make sure you're in the `friendmesh/` directory and ran `npm install`.
+- **Supabase connection errors?** Verify your `.env` file has the correct keys and they start with `REACT_APP_`.
+- **Can't push changes?** Verify you've accepted the collaborator invitation.
+- **Application not loading?** Check the browser console for errors and ensure Supabase project is active.
 
 ## License
 MIT License

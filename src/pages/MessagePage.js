@@ -1,90 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo, useReducer } from 'react';
 import { supabase } from '../supabaseClient';
-import '../styles/MessagePage.css'; // Import the CSS file
+import '../styles/MessagePage.css';
 
-function Messages() {
+// reducer
+const initialState = {
+  friends: [],
+  selectedFriend: null,
+  messages: [],
+  loading: false,
+  error: null
+};
+
+function messagesReducer(state, action) {
+  switch (action.type) {
+    case 'SET_FRIENDS':
+      return { ...state, friends: action.payload };
+    case 'SELECT_FRIEND':
+      return { ...state, selectedFriend: action.payload };
+    case 'SET_MESSAGES':
+      return { ...state, messages: action.payload };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload };
+    case 'RESET_ERROR':
+      return { ...state, error: null };
+    default:
+      return state;
+  }
+}
+
+function useFriends(userId) {
   const [friends, setFriends] = useState([]);
-  const [selectedFriend, setSelectedFriend] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [lastSeenMessages, setLastSeenMessages] = useState(new Set());
-  const messagesEndRef = useRef(null);
-
-  // Fetch current user on component mount
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
-      
-      if (user) {
-        await fetchFriends(user.id);
-        // Get last seen message timestamp from UserPreferences
-        await getLastSeenMessageTime(user.id);
-      }
-    };
-    
-    getUser();
-  }, []);
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Get user's last seen message time
-  const getLastSeenMessageTime = async (userId) => {
-    try {
-      const { data: userPrefs } = await supabase
-        .from('UserPreferences')
-        .select('last_checked_messages')
-        .eq('user_id', userId)
-        .single();
-      
-      if (userPrefs?.last_checked_messages) {
-        // Store the timestamp for highlighting new messages
-        window.lastCheckedMessages = userPrefs.last_checked_messages;
-      }
-    } catch (error) {
-      console.error('Error fetching last seen time:', error);
-    }
-  };
-
-  // Update last seen message time when user opens messages
-  const updateLastSeenMessageTime = async () => {
-    if (!currentUser) return;
+  
+  const fetchFriends = async () => {
+    if (!userId) return;
     
     try {
-      await supabase
-        .from('UserPreferences')
-        .upsert({
-          user_id: currentUser.id,
-          last_checked_messages: new Date().toISOString()
-        });
+      console.log('Fetching friends for user:', userId);
       
-      // Update the local timestamp
-      window.lastCheckedMessages = new Date().toISOString();
-      
-      // Remove highlighting from all messages since user has now seen them
-      setLastSeenMessages(new Set());
-    } catch (error) {
-      console.error('Error updating last seen time:', error);
-    }
-  };
-
-  // Fetch friends from Friend table (both directions)
-  const fetchFriends = async (currentUserId) => {
-    try {
-      console.log('Fetching friends for user:', currentUserId);
-      
-      // Get friends where current user added someone (and accepted)
       const { data: sentFriends, error: sentError } = await supabase
         .from('Friend')
         .select(`
@@ -92,10 +46,9 @@ function Messages() {
           friend_date,
           User!Friend_f_user_id_fkey(user_id, userName, email, bio, avatar_url)
         `)
-        .eq('user_id', currentUserId)
+        .eq('user_id', userId)
         .eq('status', 'accepted');
 
-      // Get friends where someone added current user (and accepted)
       const { data: receivedFriends, error: receivedError } = await supabase
         .from('Friend')
         .select(`
@@ -103,20 +56,14 @@ function Messages() {
           friend_date,
           User!Friend_user_id_fkey(user_id, userName, email, bio, avatar_url)
         `)
-        .eq('f_user_id', currentUserId)
+        .eq('f_user_id', userId)
         .eq('status', 'accepted');
 
-      if (sentError) {
-        console.error('Error fetching sent friends:', sentError);
-      }
-      if (receivedError) {
-        console.error('Error fetching received friends:', receivedError);
-      }
+      if (sentError) console.error('Error fetching sent friends:', sentError);
+      if (receivedError) console.error('Error fetching received friends:', receivedError);
 
-      // Combine friends from both directions
       const allFriends = [];
       
-      // Add friends where current user sent the friend request
       if (sentFriends) {
         sentFriends.forEach(friend => {
           if (friend.User) {
@@ -128,7 +75,6 @@ function Messages() {
         });
       }
 
-      // Add friends where current user received the friend request
       if (receivedFriends) {
         receivedFriends.forEach(friend => {
           if (friend.User) {
@@ -140,29 +86,27 @@ function Messages() {
         });
       }
 
-      // Remove duplicates (in case of bidirectional friendships)
       const uniqueFriends = allFriends.filter((friend, index, self) => 
         index === self.findIndex(f => f.user_id === friend.user_id)
       );
 
-      // Sort friends by most recent message or friendship date
-      await sortFriendsByRecentActivity(uniqueFriends, currentUserId);
-
+      // sort friends by recent activity
+      await sortFriendsByRecentActivity(uniqueFriends, userId);
+      
       console.log('Found friends:', uniqueFriends);
       setFriends(uniqueFriends);
       
     } catch (error) {
       console.error('Error fetching friends:', error);
+      setFriends([]);
     }
   };
 
-  // Sort friends by most recent message activity and mark those with new messages
   const sortFriendsByRecentActivity = async (friendsList, currentUserId) => {
     const lastCheckedTime = window.lastCheckedMessages ? new Date(window.lastCheckedMessages) : new Date(0);
     
     for (let friend of friendsList) {
       try {
-        // Get most recent message with this friend
         const { data: recentMessage } = await supabase
           .from('Message')
           .select('msg_time, sender_id')
@@ -173,7 +117,6 @@ function Messages() {
         
         friend.lastMessageTime = recentMessage?.msg_time || friend.friendshipDate;
         
-        // Check if this friend has new messages from them (not from current user)
         const { data: newMessages } = await supabase
           .from('Message')
           .select('msg_id')
@@ -184,105 +127,177 @@ function Messages() {
         friend.hasNewMessages = (newMessages && newMessages.length > 0);
         
       } catch (error) {
-        // No messages found, use friendship date
         friend.lastMessageTime = friend.friendshipDate;
         friend.hasNewMessages = false;
       }
     }
     
-    // Sort by most recent activity
     friendsList.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
   };
 
-  // Fetch messages between current user and selected friend
-  const fetchMessages = async (friendId) => {
-    if (!currentUser || !friendId) return;
-    
-    setLoading(true);
-    try {
-      console.log('Fetching messages between:', currentUser.id, 'and', friendId);
+  useEffect(() => {
+    fetchFriends();
+  }, [userId]);
+
+  return { friends, refetchFriends: fetchFriends };
+}
+
+function Messages() {
+  const [state, dispatch] = useReducer(messagesReducer, initialState);
+  const [newMessage, setNewMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // use refs to reduce useStates
+  const currentUserRef = useRef(null);
+  const lastCheckedTimeRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  
+  
+  const [userId, setUserId] = useState(null);
+  
+  
+  const { friends, refetchFriends } = useFriends(userId);
+  
+  useEffect(() => {
+    dispatch({ type: 'SET_FRIENDS', payload: friends });
+  }, [friends]);
+
+  // last seen time
+  useEffect(() => {
+    const initializeUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      currentUserRef.current = user;
+      setUserId(user?.id);
       
-      // Fetch messages using sender_id and receiver_id, ordered by oldest first (normal chat order)
+      if (user) {
+        // last seen message time
+        try {
+          const { data: userPrefs } = await supabase
+            .from('UserPreferences')
+            .select('last_checked_messages')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (userPrefs?.last_checked_messages) {
+            window.lastCheckedMessages = userPrefs.last_checked_messages;
+            lastCheckedTimeRef.current = userPrefs.last_checked_messages;
+          }
+        } catch (error) {
+          console.error('Error fetching last seen time:', error);
+        }
+      }
+    };
+    
+    initializeUser();
+  }, []);
+
+  // scroll to bottom when new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [state.messages]);
+
+
+  const filteredFriends = useMemo(() => {
+    return state.friends.filter(friend => {
+      const searchLower = searchTerm.toLowerCase();
+      const name = friend.userName || friend.email?.split('@')[0] || '';
+      const email = friend.email || '';
+      const bio = friend.bio || '';
+      
+      return name.toLowerCase().includes(searchLower) ||
+             email.toLowerCase().includes(searchLower) ||
+             bio.toLowerCase().includes(searchLower);
+    });
+  }, [state.friends, searchTerm]);
+
+  // new message IDs
+  const newMessageIds = useMemo(() => {
+    if (!lastCheckedTimeRef.current || !state.messages.length) return new Set();
+    
+    const lastChecked = new Date(lastCheckedTimeRef.current);
+    return new Set(
+      state.messages
+        .filter(msg => 
+          new Date(msg.msg_time) > lastChecked && 
+          msg.sender_id !== currentUserRef.current?.id
+        )
+        .map(msg => msg.msg_id)
+    );
+  }, [state.messages]);
+
+  // last seen message time update
+  const updateLastSeenMessageTime = async () => {
+    if (!currentUserRef.current) return;
+    
+    try {
+      const now = new Date().toISOString();
+      await supabase
+        .from('UserPreferences')
+        .upsert({
+          user_id: currentUserRef.current.id,
+          last_checked_messages: now
+        });
+      
+      window.lastCheckedMessages = now;
+      lastCheckedTimeRef.current = now;
+    } catch (error) {
+      console.error('Error updating last seen time:', error);
+    }
+  };
+
+  // get messages
+  const fetchMessages = async (friendId) => {
+    if (!currentUserRef.current || !friendId) return;
+    
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      console.log('Fetching messages between:', currentUserRef.current.id, 'and', friendId);
+      
       const { data: messagesData, error } = await supabase
         .from('Message')
         .select('*')
-        .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${currentUser.id})`)
-        .order('msg_time', { ascending: true }); // Oldest first (normal chat)
+        .or(`and(sender_id.eq.${currentUserRef.current.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${currentUserRef.current.id})`)
+        .order('msg_time', { ascending: true });
 
       if (error) {
         console.error('Error fetching messages:', error);
-        setMessages([]);
+        dispatch({ type: 'SET_MESSAGES', payload: [] });
       } else {
         console.log('Found messages:', messagesData);
-        setMessages(messagesData || []);
+        dispatch({ type: 'SET_MESSAGES', payload: messagesData || [] });
         
-        // Mark new messages for highlighting
-        markNewMessages(messagesData || []);
+        if (messagesData?.some(msg => 
+          new Date(msg.msg_time) > new Date(lastCheckedTimeRef.current || 0) && 
+          msg.sender_id !== currentUserRef.current?.id
+        )) {
+          setTimeout(() => updateLastSeenMessageTime(), 5000);
+        }
       }
-      
     } catch (error) {
       console.error('Error in fetchMessages:', error);
-      setMessages([]);
+      dispatch({ type: 'SET_MESSAGES', payload: [] });
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
-
-  // Mark messages as new if they're after the last checked time
-  const markNewMessages = (messagesList) => {
-    if (!window.lastCheckedMessages) return;
-    
-    const lastCheckedTime = new Date(window.lastCheckedMessages);
-    const newMessageIds = new Set();
-    
-    messagesList.forEach(message => {
-      const messageTime = new Date(message.msg_time);
-      // Only highlight messages from others (not from current user)
-      if (messageTime > lastCheckedTime && message.sender_id !== currentUser?.id) {
-        newMessageIds.add(message.msg_id);
-      }
-    });
-    
-    setLastSeenMessages(newMessageIds);
-    
-    // Auto-clear highlighting after 5 seconds
-    if (newMessageIds.size > 0) {
-      setTimeout(() => {
-        updateLastSeenMessageTime();
-      }, 5000);
-    }
-  };
-
-  // Filter friends based on search term
-  const filteredFriends = friends.filter(friend => {
-    const name = friend.userName || friend.email?.split('@')[0] || '';
-    const email = friend.email || '';
-    const bio = friend.bio || '';
-    
-    return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           bio.toLowerCase().includes(searchTerm.toLowerCase());
-  });
 
   const handleSelectFriend = (friend) => {
     console.log('Selected friend:', friend);
-    setSelectedFriend(friend);
+    dispatch({ type: 'SELECT_FRIEND', payload: friend });
     fetchMessages(friend.user_id);
-    // Update last seen time when selecting a friend
     setTimeout(() => updateLastSeenMessageTime(), 1000);
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !currentUser || !selectedFriend) return;
+    if (!newMessage.trim() || !currentUserRef.current || !state.selectedFriend) return;
     
-    setLoading(true);
+    dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      console.log('Sending message from', currentUser.id, 'to', selectedFriend.user_id);
+      console.log('Sending message from', currentUserRef.current.id, 'to', state.selectedFriend.user_id);
       
-      // Prepare message data with your exact schema
       const messageData = {
-        sender_id: currentUser.id,
-        receiver_id: selectedFriend.user_id,
+        sender_id: currentUserRef.current.id,
+        receiver_id: state.selectedFriend.user_id,
         msg_content: newMessage.trim(),
         msg_time: new Date().toISOString()
       };
@@ -298,76 +313,48 @@ function Messages() {
       } else {
         console.log('Message sent successfully:', data);
         setNewMessage('');
-        // Refresh messages
-        await fetchMessages(selectedFriend.user_id);
-        // Update friends list to reflect new activity
-        await fetchFriends(currentUser.id);
+        await fetchMessages(state.selectedFriend.user_id);
+        await refetchFriends();
       }
-      
     } catch (error) {
       console.error('Error in sendMessage:', error);
       alert('Failed to send message');
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   return (
     <div className="messages-container">
-      {/* Friends sidebar */}
       <div className="contacts-sidebar">
         <h3>Messages</h3>
         
-        {/* Search bar */}
-        <div style={{ padding: '0 1rem 1rem 1rem' }}>
+        <div className="search-bar-container">
           <input
             type="text"
             placeholder="Search friends..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #ddd',
-              borderRadius: '20px',
-              fontSize: '14px',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
+            className="search-bar-input"
           />
         </div>
         
-        {friends.length === 0 ? (
-          <div style={{ padding: '1rem', textAlign: 'center' }}>
+        {state.friends.length === 0 ? (
+          <div className="no-friends-message">
             <p>No friends to message yet.</p>
-            <Link 
-              to="/friends"
-              style={{ 
-                display: 'inline-block',
-                padding: '8px 16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
+            <a 
+              href="/friends"
+              className="add-friends-btn"
             >
               Add Friends
-            </Link>
+            </a>
           </div>
         ) : filteredFriends.length === 0 ? (
-          <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
+          <div className="no-friends-message no-friends-filtered">
             <p>No friends found matching "{searchTerm}"</p>
             <button 
               onClick={() => setSearchTerm('')}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: '#f0f0f0',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
+              className="clear-search-btn"
             >
               Clear search
             </button>
@@ -378,7 +365,7 @@ function Messages() {
               <li
                 key={friend.user_id}
                 onClick={() => handleSelectFriend(friend)}
-                className={`contact-item${selectedFriend?.user_id === friend.user_id ? ' selected' : ''}${friend.hasNewMessages ? ' has-new-messages' : ''}`}
+                className={`contact-item${state.selectedFriend?.user_id === friend.user_id ? ' selected' : ''}${friend.hasNewMessages ? ' has-new-messages' : ''}`}
               >
                 <div className="contact-avatar-row">
                   <div className="contact-avatar">
@@ -386,7 +373,7 @@ function Messages() {
                       <img 
                         src={friend.avatar_url} 
                         alt="Avatar" 
-                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                        className="avatar-img"
                       />
                     ) : (
                       (friend.userName || friend.email)?.charAt(0).toUpperCase()
@@ -407,47 +394,43 @@ function Messages() {
         )}
       </div>
 
-      {/* Messages area */}
       <div className="messages-area">
-        {selectedFriend ? (
+        {state.selectedFriend ? (
           <>
-            {/* Contact header */}
             <div className="contact-header">
               <div className="contact-avatar">
-                {selectedFriend.avatar_url ? (
+                {state.selectedFriend.avatar_url ? (
                   <img 
-                    src={selectedFriend.avatar_url} 
+                    src={state.selectedFriend.avatar_url} 
                     alt="Avatar" 
-                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                    className="avatar-img"
                   />
                 ) : (
-                  (selectedFriend.userName || selectedFriend.email)?.charAt(0).toUpperCase()
+                  (state.selectedFriend.userName || state.selectedFriend.email)?.charAt(0).toUpperCase()
                 )}
               </div>
               <div>
                 <div className="contact-name">
-                  {selectedFriend.userName || selectedFriend.email?.split('@')[0] || 'Unknown User'}
+                  {state.selectedFriend.userName || state.selectedFriend.email?.split('@')[0] || 'Unknown User'}
                 </div>
                 <div className="contact-status">
-                  Friends since {new Date(selectedFriend.friendshipDate).toLocaleDateString()}
+                  Friends since {new Date(state.selectedFriend.friendshipDate).toLocaleDateString()}
                 </div>
               </div>
             </div>
 
-            {/* Messages */}
             <div className="messages-list">
-              {loading ? (
+              {state.loading ? (
                 <div className="no-messages">Loading messages...</div>
-              ) : messages.length === 0 ? (
+              ) : state.messages.length === 0 ? (
                 <div className="no-messages">
                   No messages yet. Start a conversation!
                 </div>
               ) : (
                 <>
-                  {messages.map(message => {
-                    // Determine if message is from current user using sender_id
-                    const isFromCurrentUser = message.sender_id === currentUser?.id;
-                    const isNewMessage = lastSeenMessages.has(message.msg_id);
+                  {state.messages.map(message => {
+                    const isFromCurrentUser = message.sender_id === currentUserRef.current?.id;
+                    const isNewMessage = newMessageIds.has(message.msg_id);
                     
                     return (
                       <div
@@ -469,7 +452,6 @@ function Messages() {
               )}
             </div>
 
-            {/* Message input */}
             <div className="message-input-row">
               <input
                 type="text"
@@ -477,9 +459,9 @@ function Messages() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
                 className="message-input"
-                disabled={loading}
+                disabled={state.loading}
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !loading) {
+                  if (e.key === 'Enter' && !state.loading) {
                     sendMessage();
                   }
                 }}
@@ -487,15 +469,15 @@ function Messages() {
               <button
                 onClick={sendMessage}
                 className="send-button"
-                disabled={loading || !newMessage.trim()}
+                disabled={state.loading || !newMessage.trim()}
               >
-                {loading ? 'Sending...' : 'Send'}
+                {state.loading ? 'Sending...' : 'Send'}
               </button>
             </div>
           </>
         ) : (
           <div className="select-contact-message">
-            {friends.length === 0 ? 
+            {state.friends.length === 0 ? 
               'Add some friends to start messaging!' : 
               filteredFriends.length === 0 ?
                 `No friends found matching "${searchTerm}"` :
@@ -505,35 +487,32 @@ function Messages() {
         )}
       </div>
 
-
       <div className="profile-sidebar">
-        {selectedFriend ? (
+        {state.selectedFriend ? (
           <>
             <div className="profile-header">
-              {selectedFriend.avatar_url ? (
+              {state.selectedFriend.avatar_url ? (
                 <img 
-                  src={selectedFriend.avatar_url} 
-                  alt={`${selectedFriend.userName || selectedFriend.email?.split('@')[0] || 'User'}'s Avatar`} 
+                  src={state.selectedFriend.avatar_url} 
+                  alt={`${state.selectedFriend.userName || state.selectedFriend.email?.split('@')[0] || 'User'}'s Avatar`} 
                   className="profile-avatar" 
                 />
               ) : (
                 <div className="profile-avatar-placeholder">
-                  {/* default is the firts letter of username*/}
-                  {(selectedFriend.userName || selectedFriend.email)?.charAt(0).toUpperCase() || 'F'}
+                  {(state.selectedFriend.userName || state.selectedFriend.email)?.charAt(0).toUpperCase() || 'F'}
                 </div>
               )}
 
-              {}
               <h3>
-                {selectedFriend.userName || selectedFriend.email?.split('@')[0] || 'Unknown User'}
+                {state.selectedFriend.userName || state.selectedFriend.email?.split('@')[0] || 'Unknown User'}
               </h3>
             </div>
 
             <div className="profile-details">
-              {selectedFriend.bio ? (
+              {state.selectedFriend.bio ? (
                 <>
                   <h4>Bio:</h4>
-                  <p>{selectedFriend.bio}</p>
+                  <p>{state.selectedFriend.bio}</p>
                 </>
               ) : (
                 <>
@@ -542,20 +521,19 @@ function Messages() {
                 </>
               )}
 
-              {selectedFriend.email && (
+              {state.selectedFriend.email && (
                 <>
                   <h4>Email:</h4>
-                  <p>{selectedFriend.email}</p>
+                  <p>{state.selectedFriend.email}</p>
                 </>
               )}
               
-              {selectedFriend.friendshipDate && (
+              {state.selectedFriend.friendshipDate && (
                 <>
                   <h4>Friends Since:</h4>
-                  <p>{new Date(selectedFriend.friendshipDate).toLocaleDateString()}</p>
+                  <p>{new Date(state.selectedFriend.friendshipDate).toLocaleDateString()}</p>
                 </>
               )}
-
             </div>
           </>
         ) : (
@@ -564,7 +542,6 @@ function Messages() {
           </div>
         )}
       </div>
-      
     </div>
   );
 }
