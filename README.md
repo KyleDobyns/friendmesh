@@ -1,6 +1,6 @@
 # FriendMesh
 
-A simplified social media platform built by "Cool Team Name" with React and Supabase for a CSS 481 class project at UW Bothell.
+A simplified social media platform built by "Cool Team Name" with React and Supabase for the really cool Professfor and CSS 481 class project at UW Bothell.
 
 ## Project Structure
 - `friendmesh/`: React application with Supabase integration (runs on `http://localhost:3000`)
